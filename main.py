@@ -89,13 +89,21 @@ def Model(n,A):
 
     m.addConstrs((x[i,j] - x[j,i] == 0 for i in range(n) for j in range(i+1,n)), name = "symmetric")
 
-    for v in range(n):
-        m.addConstr((gp.quicksum(x[v,j] for j in range(n)) == 2))
+
+    m.addConstrs((gp.quicksum(x[v,j] for j in range(n)) == 2 for v in range(n)))
 
     # Set objective
-    m.setObjective((x[i,j] * A[i][j])/2, GRB.MINIMIZE)
+    m.setObjective((gp.quicksum(x[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
 
-    return m.optimize()
+    m.optimize()
+    solution = m.getAttr("X", x)
+    print("\n Optimal basket content:")
+
+    for i,j, value in solution:
+        if value >=0:
+            print((i,j))
+
+
 
     #     # Add constraint: x + 2 y + 3 z <= 4
     #     m.addConstr(x + 2 * y + 3 * z <= 4, "c0")
@@ -120,13 +128,13 @@ def Model(n,A):
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python cat.py <file>")
-        sys.exit(-1)
+        n, A = readDat("a280.dat")
+        m = Model(n, A)
     n, A = readDat(sys.argv[1])
-    Model(n,A)
+    m = Model(n,A)
     print(n)
-    print(A)
-    print(Model(n, A))
+    #print(A)
+
 
 main()
 
