@@ -83,11 +83,11 @@ def Model(n,A):
     for i in range(n):
         for j in range(n):
             if A[i][j] == 0:
-                m.addConstr((x[i,j] == 0), name = "donotuseedgeswithoutweight")
+                m.addConstr((x[i,j] == 0), name="donotuseedgeswithoutweight")
             else:
-                m.addConstr((x[i,j] >= 0), name = "positiveweight")
+                m.addConstr((x[i,j] >= 0), name="positiveweight")
 
-    m.addConstrs((x[i,j] - x[j,i] == 0 for i in range(n) for j in range(i+1,n)), name = "symmetric")
+    m.addConstrs((x[i,j] - x[j,i] == 0 for i in range(n) for j in range(i+1,n)), name="symmetric")
 
 
     m.addConstrs((gp.quicksum(x[v,j] for j in range(n)) == 2 for v in range(n)))
@@ -99,9 +99,9 @@ def Model(n,A):
     solution = m.getAttr("X", x)
     print("\n Optimal basket content:")
 
-    for i,j, value in solution:
-        if value >=0:
-            print((i,j))
+    for i in solution:
+        if solution[i] > 0:
+            print(i)
 
 
 
@@ -130,10 +130,11 @@ def main():
     if len(sys.argv) != 2:
         n, A = readDat("a280.dat")
         m = Model(n, A)
-    n, A = readDat(sys.argv[1])
-    m = Model(n,A)
-    print(n)
-    #print(A)
+    else:
+        n, A = readDat(sys.argv[1])
+        m = Model(n,A)
+        print(n)
+        #print(A)
 
 
 main()
