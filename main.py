@@ -61,7 +61,7 @@ import sys
 
 
 #m.addConstrs((x[i][j] == x[j][i] for i in range(n) for j in range(i+1,n)), name='c')
-
+edges = 0
 
 def readDat(filename):
     with open(filename) as datFile:
@@ -74,31 +74,32 @@ def readDat(filename):
 
 def Model(n,A):
     # Create a new model
+    global edges
     m = gp.Model("Subtour")
 
     # Create variables
     # n = 318 #aanpassen naar eerste getal in .dat --> nu linhp218.dat
-    x = m.addVars(n,n, vtype="C", name="x")
+    edges = m.addVars(n,n, vtype="C", name="x")
 
     for i in range(n):
         for j in range(n):
             if A[i][j] == 0:
-                m.addConstr((x[i,j] == 0), name="donotuseedgeswithoutweight")
+                m.addConstr((edges[i,j] == 0), name="donotuseedgeswithoutweight")
             else:
-                m.addConstr((x[i,j] >= 0), name="positiveweight")
+                m.addConstr((edges[i,j] >= 0), name="positiveweight")
 
-    m.addConstrs((x[i,j] - x[j,i] == 0 for i in range(n) for j in range(i+1,n)), name="symmetric")
+    m.addConstrs((edges[i,j] - edges[j,i] == 0 for i in range(n) for j in range(i+1,n)), name="symmetric")
 
 
-    m.addConstrs((gp.quicksum(x[v,j] for j in range(n)) == 2 for v in range(n)))
+    m.addConstrs((gp.quicksum(edges[v,j] for j in range(n)) == 2 for v in range(n)))
 
     # Set objective
-    m.setObjective((gp.quicksum(x[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
+    m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
     return m
 
 def OptimizeAndPrint(m):
     m.optimize()
-    solution = m.getAttr("X", x)
+    solution = m.getAttr("X", edges)
     print("\n Optimal basket content:")
 
     for i in solution:
@@ -127,6 +128,10 @@ def OptimizeAndPrint(m):
     # except AttributeError:
     #     print('Encountered an attribute error')
     #
+
+
+def CuttingPlanes():
+    return
 
 def main():
     if len(sys.argv) != 2:
