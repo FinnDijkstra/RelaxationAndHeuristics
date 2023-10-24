@@ -66,19 +66,67 @@ import sys
 def readDat(filename):
     with open(filename) as datFile:
         x = [data.split() for data in datFile]
-        n = x[0][0]
-        A = x[:][1:]
+        x2 = [[int(y) for y in lst] for lst in x]
+        n = int(x2[0][0])
+        A = x2[:][1:]
         return n, A
 
+
+def Model(n,A):
+    # Create a new model
+    m = gp.Model("Subtour")
+
+    # Create variables
+    # n = 318 #aanpassen naar eerste getal in .dat --> nu linhp218.dat
+    x = m.addVars(n,n, vtype="C", name="x")
+
+    for i in range(n):
+        for j in range(n):
+            if A[i][j] == 0:
+                m.addConstr((x[i,j] == 0), name = "donotuseedgeswithoutweight")
+            else:
+                m.addConstr((x[i,j] >= 0), name = "positiveweight")
+
+    m.addConstrs((x[i,j] - x[j,i] == 0 for i in range(n) for j in range(i+1,n)), name = "symmetric")
+
+    for v in range(n):
+        m.addConstr((gp.quicksum(x[v,j] for j in range(n)) == 2))
+
+    # Set objective
+    m.setObjective((x[i,j] * A[i][j])/2, GRB.MINIMIZE)
+
+    return m.optimize()
+
+    #     # Add constraint: x + 2 y + 3 z <= 4
+    #     m.addConstr(x + 2 * y + 3 * z <= 4, "c0")
+    #
+    #     # Add constraint: x + y >= 1
+    #     m.addConstr(x + y >= 1, "c1")
+    #
+    #     # Optimize model
+    #     m.optimize()
+    #
+    #     for v in m.getVars():
+    #         print('%s %g' % (v.VarName, v.X))
+    #
+    #     print('Obj: %g' % m.ObjVal)
+    #
+    # except gp.GurobiError as e:
+    #     print('Error code ' + str(e.errno) + ': ' + str(e))
+    #
+    # except AttributeError:
+    #     print('Encountered an attribute error')
+    #
 
 def main():
     if len(sys.argv) != 2:
         print("Usage: python cat.py <file>")
         sys.exit(-1)
     n, A = readDat(sys.argv[1])
+    Model(n,A)
     print(n)
     print(A)
-
+    print(Model(n, A))
 
 main()
 
