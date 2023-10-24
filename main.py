@@ -3,6 +3,7 @@ from gurobipy import GRB
 import numpy
 import pandas
 import matplotlib
+import sys
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
@@ -56,3 +57,14 @@ except gp.GurobiError as e:
 
 except AttributeError:
     print('Encountered an attribute error')
+
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python cat.py <file>")
+        sys.exit(-1)
+    with open(sys.argv[1]) as infile:
+        for s in infile:
+            print(s, end = "")
+
+main()
