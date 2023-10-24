@@ -61,8 +61,9 @@ import sys
 
 
 #m.addConstrs((x[i][j] == x[j][i] for i in range(n) for j in range(i+1,n)), name='c')
-edges = 0
-
+edges = []
+n=0
+nodesInCut = []
 def readDat(filename):
     with open(filename) as datFile:
         x = [data.split() for data in datFile]
@@ -102,9 +103,10 @@ def OptimizeAndPrint(m):
     solution = m.getAttr("X", edges)
     print("\n Optimal basket content:")
 
-    for i in solution:
-        if solution[i] > 0:
-            print(i)
+    for i,j in solution:
+        if solution[i,j] > 0:
+            print((i,j))
+
 
 
 
@@ -130,13 +132,86 @@ def OptimizeAndPrint(m):
     #
 
 
-def CuttingPlanes():
-    return
+def findNodesInCut(flowCapacityDict, node):
+    global nodesInCut
+    nodesInCut.append(node)
+    for leaf in flowCapacityDict[node]:
+        if leaf not in nodesInCut:
+            findNodesInCut(flowCapacityDict,leaf)
+
+
+def findPath(flowCapacityDict, path, sink):
+    start = path[-1]
+    for end in flowCapacityDict[path[-1]]:
+        if end == sink:
+            path.append(end)
+            return True, path, flowCapacityDict[start][end]
+        if end not in path:
+            path.append(end)
+            pathBool, path, maxpathflow = findPath(flowCapacityDict, path, sink)
+            if pathBool:
+                arcFlow = flowCapacityDict[start][end]
+                maxpathflow = min(arcFlow,maxpathflow)
+                return pathBool, path, maxpathflow
+            else:
+                path.pop()
+    return False, path, 0
+
+
+
+
+def FordFulkerson(solution, sink):
+    flowCapacityDict = {}
+    for start in range(n):
+        if start != sink:
+            flowCapacityDict[start] = {}
+            for end in range(1,n):
+                if solution[start,end]>0:
+                    flowCapacityDict[start][end] = solution[start,end]
+    pathBool = True
+    maxflow = 0
+
+    while pathBool:
+        path = [0]
+        pathBool, path, maxpathflow = findPath(flowCapacityDict, path, sink)
+        for i in range(len(path)-1):
+            start = path[i]
+            end = path[i+1]
+            flowCapacityDict[start][end] -= maxpathflow
+            if flowCapacityDict[start][end] == 0:
+                del flowCapacityDict[start][end]
+            maxflow += maxpathflow
+            if maxflow >= 2:
+                return True, []
+    global nodesInCut
+    nodesInCut = []
+    findNodesInCut(flowCapacityDict, 0)
+    return False, nodesInCut
+
+
+def CuttingPlanes(m):
+    feasible = False
+    while not feasible:
+        # m.optimize()
+        OptimizeAndPrint(m)
+        solution = m.getAttr("X", edges)
+        for sink in range(1,n):
+            flowBool, nodes = FordFulkerson(solution, sink)
+            if not flowBool:
+                allNodes = range(n)
+                m.addConstr(gp.quicksum(edges[u,v] for u in nodes for v in allNodes if v != u) >= 2,
+                                name="neededCutConstraint")
+                break
+            feasible = True
+    return m
 
 def main():
+    global n
     if len(sys.argv) != 2:
-        n, A = readDat("a280.dat")
+        n, A = readDat("burma14.dat")
         m = Model(n, A)
+        OptimizeAndPrint(m)
+        CuttingPlanes(m)
     else:
         n, A = readDat(sys.argv[1])
         m = Model(n,A)
