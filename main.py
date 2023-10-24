@@ -94,7 +94,9 @@ def Model(n,A):
 
     # Set objective
     m.setObjective((gp.quicksum(x[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
+    return m
 
+def OptimizeAndPrint(m):
     m.optimize()
     solution = m.getAttr("X", x)
     print("\n Optimal basket content:")
