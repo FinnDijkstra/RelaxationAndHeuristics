@@ -5,6 +5,8 @@ import pandas
 import matplotlib
 import sys
 
+#import main
+
 # def print_hi(name):
 #     # Use a breakpoint in the code line below to debug your script.
 #     print(f'Hello, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
@@ -99,6 +101,113 @@ def Model(n,A):
     m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
     return m
 
+def Model_extended(n,A):
+   #Create a new model
+    global edges, flows
+
+    m = gp.Model("Extended")
+    nodelist = [*range(n)]
+    slist = [*range(1,n)]
+    flows = m.addVars(slist, nodelist, nodelist, vtype="C", name="Flows")
+    edges = m.addVars(n, n, vtype="C", name="x") #Bayes29: 2020 I 2013.5 C
+
+    for i in range(n):
+        for j in range(n):
+            if A[i][j] == 0:
+                m.addConstr((edges[i, j] == 0), name="donotuseedgeswithoutweight")
+            else:
+                m.addConstr((edges[i, j] >= 0), name="positiveweight")
+
+
+    m.addConstrs((edges[i, j] - edges[j, i] == 0 for i in range(n) for j in range(i + 1, n)), name="symmetric")
+
+    m.addConstrs(((flows[s, i, j] >= 0) for s in range(1, n) for i in range(n) for j in range(n)),
+             name="positive flows")
+
+    m.addConstrs((gp.quicksum(edges[v, j] for j in range(n) if j != v) == 2 for v in range(n)), name= "two edges")
+
+    m.addConstrs(((-flows.sum(s,'*', 0) + flows.sum(s, 0, '*')) >= 2 for s in range(1, n)), name="Outflow start")
+
+    m.addConstrs(((flows.sum(s,'*', k) == flows.sum(s, k, '*')) for s in range(1,n) for k in range(1,n) if s!=k),
+                 name="Inflow is outflow")
+
+    m.addConstrs((flows[s,i,j] <= edges[i,j] for s in range(1,n) for i in range(n) for j in range(n)))
+
+    m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
+    return m
+
+def Model_extended_Integer(n,A):
+   #Create a new model
+    global edges, flows
+
+    m = gp.Model("Extended")
+    nodelist = [*range(n)]
+    slist = [*range(1,n)]
+    flows = m.addVars(slist, nodelist, nodelist, vtype="C", name="Flows")
+    edges = m.addVars(n, n, vtype="I", name="x") #Bayes29: 2020 I 2013.5 C
+
+    for i in range(n):
+        for j in range(n):
+            if A[i][j] == 0:
+                m.addConstr((edges[i, j] == 0), name="donotuseedgeswithoutweight")
+            else:
+                m.addConstr((edges[i, j] >= 0), name="positiveweight")
+
+
+    m.addConstrs((edges[i, j] - edges[j, i] == 0 for i in range(n) for j in range(i + 1, n)), name="symmetric")
+
+    m.addConstrs(((flows[s, i, j] >= 0) for s in range(1, n) for i in range(n) for j in range(n)),
+             name="positive flows")
+
+    m.addConstrs((gp.quicksum(edges[v, j] for j in range(n) if j != v) == 2 for v in range(n)), name= "two edges")
+
+    m.addConstrs(((-flows.sum(s,'*', 0) + flows.sum(s, 0, '*')) >= 2 for s in range(1, n)), name="Outflow start")
+
+    m.addConstrs(((flows.sum(s,'*', k) == flows.sum(s, k, '*')) for s in range(1,n) for k in range(1,n) if s!=k),
+                 name="Inflow is outflow")
+
+    m.addConstrs((flows[s,i,j] <= edges[i,j] for s in range(1,n) for i in range(n) for j in range(n)))
+
+    m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
+    return m
+
+ # m.addConstrs((gp.quicksum(flows[s, j, k] for j in range(n) for k in rangje(n))
+ #                      == (gp.quicksum(flows[i, s, s] for i in range(1, n)))), name="f_in is f_out")
+
+
+
+
+#     # Create variables
+#     edges = m.addVars(n,n, vtype="C", name="x")
+#     flows = m.addVars(n,n, vtype = "C", name="f")
+#
+#     for i in range(n):
+#         for j in range(n):
+#             if A[i][j] == 0:
+#                 m.addConstr((edges[i, j] == 0), name="donotuseedgeswithoutweight")
+#             else:
+#                 m.addConstr((edges[i, j] >= 0), name="positiveweight")
+#
+#     m.addConstrs((gp.quicksum(edges[v,j] for j in range(n)) == 2 for v in range(n)))
+#     m.setObjective((gp.quicksum(edges[i, j] * A[i][j] for i in range(n) for j in range(n))) / 2, GRB.MINIMIZE)
+#
+#     U = m.optimize() #wordt returned in de vorm van (i,j)
+#     solution = m.getAttr("X", edges)
+#     r=0
+#
+#  #voor i in U zodat (i, 1), (i, 6), (i, 9)
+#     for s in range(n): #voor j in U zodat 1, 6, 9 worden gepakt van hierboven
+#         if solution[i] > 0:
+#             if (r,s) in solution:
+#                  print((i,j))
+#
+# #    m.addConstrs(
+# #        (flows.sum('*', i, j) <= capacities[i, j] for i, j in m), "cap")
+#
+# #     # Set objective
+# #     m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
+# #     return m
+
 def OptimizeAndPrint(m):
     m.optimize()
     solution = m.getAttr("X", edges)
@@ -108,6 +217,15 @@ def OptimizeAndPrint(m):
         if solution[i,j] > 0:
             print((i,j))
             print(solution[i, j])
+
+def FinalPrint(m1, m2, m3):
+    print("\n Value of relaxation:")
+    m1.optimize()
+    print(" - Cutting plane: %f" % m1.ObjVal)
+    m2.optimize()
+    print(" - Extended: %f" % m2.ObjVal)
+    m3.optimize()
+    print("\n Integer Optimal: %f" % m3.ObjVal)
 
 
 
@@ -215,15 +333,15 @@ def CuttingPlanes(m):
                 feasible = True
     return m
 
-
-
 def main():
     global n
     if len(sys.argv) != 2:
-        n, A = readDat("burma14.dat")
-        m = Model(n, A)
+        n, A = readDat("bays29.dat")
+        m = Model_extended(n, A)
+        m3 = Model_extended_Integer(n, A)
         OptimizeAndPrint(m)
-        CuttingPlanes(m)
+        FinalPrint(m,m,m3)
+        # CuttingPlanes(m)
     else:
         n, A = readDat(sys.argv[1])
         m = Model(n,A)
