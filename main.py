@@ -102,7 +102,7 @@ def Model(n,A):
 def OptimizeAndPrint(m):
     m.optimize()
     solution = m.getAttr("X", edges)
-    print("\n Optimal basket content:")
+    print("\n Solution with objective value %f" % m.ObjVal)
 
     for i,j in solution:
         if solution[i,j] > 0:
