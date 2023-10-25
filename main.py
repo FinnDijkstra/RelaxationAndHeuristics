@@ -88,11 +88,12 @@ def Model(n,A):
                 m.addConstr((edges[i,j] == 0), name="donotuseedgeswithoutweight")
             else:
                 m.addConstr((edges[i,j] >= 0), name="positiveweight")
+                #m.addConstr((edges[i, j] <= 1), name="positiveweight")
 
     m.addConstrs((edges[i,j] - edges[j,i] == 0 for i in range(n) for j in range(i+1,n)), name="symmetric")
 
 
-    m.addConstrs((gp.quicksum(edges[v,j] for j in range(n)) == 2 for v in range(n)))
+    m.addConstrs((gp.quicksum(edges[v,j] for j in range(n) if j != v) == 2 for v in range(n)))
 
     # Set objective
     m.setObjective((gp.quicksum(edges[i,j] * A[i][j] for i in range(n) for j in range(n)))/2, GRB.MINIMIZE)
@@ -106,6 +107,7 @@ def OptimizeAndPrint(m):
     for i,j in solution:
         if solution[i,j] > 0:
             print((i,j))
+            print(solution[i, j])
 
 
 
@@ -130,6 +132,7 @@ def OptimizeAndPrint(m):
     # except AttributeError:
     #     print('Encountered an attribute error')
     #
+
 
 
 def findNodesInCut(flowCapacityDict, node):
@@ -174,15 +177,19 @@ def FordFulkerson(solution, sink):
     while pathBool:
         path = [0]
         pathBool, path, maxpathflow = findPath(flowCapacityDict, path, sink)
+        #print(path)
+        #print(maxpathflow)
         for i in range(len(path)-1):
             start = path[i]
             end = path[i+1]
             flowCapacityDict[start][end] -= maxpathflow
             if flowCapacityDict[start][end] == 0:
                 del flowCapacityDict[start][end]
-            maxflow += maxpathflow
-            if maxflow >= 2:
-                return True, []
+        maxflow += maxpathflow
+        #print(maxflow)
+        if maxflow >= 2:
+            #print("flow over requirement with maxflow " + str(maxflow))
+            return True, path
     global nodesInCut
     nodesInCut = []
     findNodesInCut(flowCapacityDict, 0)
@@ -198,12 +205,17 @@ def CuttingPlanes(m):
         for sink in range(1,n):
             flowBool, nodes = FordFulkerson(solution, sink)
             if not flowBool:
-                allNodes = range(n)
+                allNodes = [*range(n)]
+                for u in nodes:
+                    allNodes.remove(u)
                 m.addConstr(gp.quicksum(edges[u,v] for u in nodes for v in allNodes if v != u) >= 2,
                                 name="neededCutConstraint")
                 break
-            feasible = True
+            if flowBool and sink == n-1:
+                feasible = True
     return m
+
+
 
 def main():
     global n
@@ -216,7 +228,7 @@ def main():
         n, A = readDat(sys.argv[1])
         m = Model(n,A)
         print(n)
-        #print(A)
+        # print(A)
 
 
 main()
