@@ -377,9 +377,11 @@ def main():
         # CuttingPlanes(m)
     else:
         n, A = readDat(sys.argv[1])
+        m2 = Model_extended(n, A)
+        m3 = Model_extended_Integer(n, A)
         m = Model(n, A)
-        CuttingPlanes(m)
-        # print(A)
+
+        FinalPrint(m, m2, m3)
 
 
 main()
