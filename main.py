@@ -364,6 +364,35 @@ def CuttingPlanes(m):
     return m
 
 
+def priorityRules(n, A):
+    nodesLeft = [*range(n)]
+    min = 1e10
+    minPair = [0,1]
+    for i in nodesLeft:
+        for j in nodesLeft:
+            if i < j:
+                if A[i][j] < min:
+                    min = A[i][j]
+                    minPair = [i, j]
+    path = minPair
+    value = min
+    nodesLeft.remove(minPair[0])
+    nodesLeft.remove(minPair[1])
+    while len(path) < n:
+        i = path[-1]
+        min = 1e10
+        minVert = nodesLeft[0]
+        for j in nodesLeft:
+            if A[i][j] < min:
+                min = A[i][j]
+                minVert = j
+        path.append(minVert)
+        value += min
+        nodesLeft.remove(minVert)
+
+
+    return value, path
+
 def main():
     global n
     if len(sys.argv) != 2:
@@ -378,5 +407,10 @@ def main():
         FinalPrint(m, m2, m3)
         # CuttingPlanes(m)
     if task3:
-        print("ok")
+        st1 = time.time()
+        x, p = priorityRules(n, A)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+
+        print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
 main()
