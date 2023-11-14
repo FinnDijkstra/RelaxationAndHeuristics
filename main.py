@@ -2,6 +2,8 @@ import gurobipy as gp
 from gurobipy import GRB
 import sys
 import time
+import random
+import math
 
 
 """
@@ -393,6 +395,22 @@ def nearestNeighbour(n, A):
     value += A[path[0]][path[-1]]
     return value, path
 
+
+def evaluateFitness(pathList, A):
+    value = A[pathList[-1]][pathList[0]]
+    for v in range(len(pathList)-1):
+        value += A[pathList[v]][pathList[v+1]]
+    return value
+
+
+def beeColonyOptimization(n,A):
+    noPatches = round(math.sqrt(n))
+    noBeesOptimal = noPatches
+    noBeesSubOptimal = round(noBeesOptimal/5)
+
+
+
+
 def main():
     global n
     if len(sys.argv) != 2:
@@ -408,7 +426,7 @@ def main():
         # CuttingPlanes(m)
     if task3:
         st1 = time.time()
-        x, p = priorityRules(n, A)
+        x, p = nearestNeighbour(n, A)
         et1 = time.time()
         elapsed_time1 = et1 - st1
 
