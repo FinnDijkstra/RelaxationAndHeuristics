@@ -46,6 +46,8 @@ edges = []
 flows = []
 n = 0
 nodesInCut = []
+task2 = False
+task3 = True
 
 
 def readDat(filename):
@@ -355,6 +357,7 @@ def CuttingPlanes(m):
                 # print(sum(solution[u,v] for u,v in cutEdges))
                 m.addConstr(gp.quicksum(edges[u, v] for u in nodes for v in allNodes) >= 2,
                             name="neededCutConstraint")
+                # print(sink)
                 break
             if flowBool and sink == n - 1:
                 feasible = True
@@ -364,21 +367,16 @@ def CuttingPlanes(m):
 def main():
     global n
     if len(sys.argv) != 2:
-        n, A = readDat("hk48.dat")
+        n, A = readDat("att48.dat")
+    else:
+        n, A = readDat(sys.argv[1])
+    if task2:
         m2 = Model_extended(n, A)
         m3 = Model_extended_Integer(n, A)
         # OptimizeAndPrint(m)
         m = Model(n, A)
-
         FinalPrint(m, m2, m3)
         # CuttingPlanes(m)
-    else:
-        n, A = readDat(sys.argv[1])
-        m2 = Model_extended(n, A)
-        m3 = Model_extended_Integer(n, A)
-        m = Model(n, A)
-
-        FinalPrint(m, m2, m3)
-
-
+    if task3:
+        print("ok")
 main()
