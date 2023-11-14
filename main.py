@@ -416,6 +416,126 @@ def beeColonyOptimization():
 
 
 
+
+##### Genetic Algorithm
+
+class individual:
+    def __init__(self) -> None:
+        self.gnome = []
+        self.fitness = 0
+
+
+    def __str__(self):
+        return f"{self.gnome} with fitness {self.fitness}"
+    def __lt__(self, other):
+        return self.fitness < other.fitness
+
+    def __gt__(self, other):
+        return self.fitness > other.fitness
+
+
+# Function to return a random number in the path
+def rand_num(start, end):
+    return random.randint(start, end -1 )
+
+
+# Function to return a mutated gnome by swapping two random cities in the gnome
+def mutatedGene(gnome):
+    while True:
+        r = rand_num(0, n)
+        r1 = rand_num(0, n)
+        if r1 != r:
+            temp = gnome[r]
+            gnome[r] = gnome[r1]
+            gnome[r1] = temp
+            break
+    return gnome
+
+
+# Function to return a valid gnome by appending non-visited cities until length is n
+def create_gnome():
+    gnome = []
+    while True:
+        if len(gnome) == n:
+            break
+        city = rand_num(0, n)
+        if city not in gnome:
+            gnome.append(city)
+    return gnome
+
+def cooldown(temp):
+    return (90 * temp) / 100
+
+
+def Genetic_Alg(A):
+    population_size = 10
+    population = []
+    # Populating the gnome pool
+    for i in range(population_size):
+        new = individual()
+        new.gnome = create_gnome()
+        new.fitness = evaluateFitness(new.gnome)
+        population.append(new)
+
+
+    print("\nInitial population: \nGNOME     FITNESS VALUE\n")
+    for i in range(population_size):
+        print(population[i].gnome, population[i].fitness)
+    print()
+
+    found = False
+    temperature = 1000
+    gen = 1
+    gen_thres = 2*n
+
+    while temperature > 100 and gen <= gen_thres:
+        population.sort()
+        print("\nCurrent temp: ", temperature)
+        new_population = []
+        for i in range(population_size):
+            p1 = population[i]
+
+            while True:
+                new_g = mutatedGene(p1.gnome)
+                new_gnome = individual()
+                new_gnome.gnome = new_g
+                new_gnome.fitness = evaluateFitness(new_gnome.gnome)
+
+                if new_gnome.fitness <= population[i].fitness:
+                    new_population.append(new_gnome)
+                    break
+
+                else:
+                    # Accepting the rejected children at a possible probability above threshold.
+                    prob = pow(
+                        2.7,
+                        -1
+                        * (
+                                (float)(new_gnome.fitness - population[i].fitness)
+                                / temperature
+                        ),
+                    )
+                    if prob > 0.5:
+                        new_population.append(new_gnome)
+                        break
+
+        temperature = cooldown(temperature)
+        population = new_population
+        print("Generation", gen)
+        print("GNOME     FITNESS VALUE")
+
+        for i in range(population_size):
+            print(population[i].gnome, population[i].fitness)
+        gen += 1
+
+    value = 100000
+    for i in range(population_size):
+        print(population[i].gnome, population[i].fitness)
+        if population[i].fitness < value:
+            value = population[i].fitness
+            optimalpath = population[i].gnome
+    return value, optimalpath
+
 def main():
     global n
     global A
@@ -437,4 +557,9 @@ def main():
         elapsed_time1 = et1 - st1
 
         print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        st2 = time.time()
+        value, path = Genetic_Alg(A)
+        et2 = time.time()
+        elapsed_time2 = et2 - st2
+        print(f"Solve in {elapsed_time2} seconds, with value {value} and path {path}")
 main()
