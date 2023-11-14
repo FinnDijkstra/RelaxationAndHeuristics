@@ -364,7 +364,7 @@ def CuttingPlanes(m):
     return m
 
 
-def priorityRules(n, A):
+def nearestNeighbour(n, A):
     nodesLeft = [*range(n)]
     min = 1e10
     minPair = [0,1]
@@ -390,7 +390,7 @@ def priorityRules(n, A):
         value += min
         nodesLeft.remove(minVert)
 
-
+    value += A[path[0]][path[-1]]
     return value, path
 
 def main():
