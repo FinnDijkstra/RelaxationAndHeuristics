@@ -47,6 +47,7 @@ if no more path can be found and the total maxflow is less than 2Y
 edges = []
 flows = []
 n = 0
+A =[[]]
 nodesInCut = []
 task2 = False
 task3 = True
@@ -396,23 +397,28 @@ def nearestNeighbour(n, A):
     return value, path
 
 
-def evaluateFitness(pathList, A):
+def evaluateFitness(pathList):
     value = A[pathList[-1]][pathList[0]]
     for v in range(len(pathList)-1):
         value += A[pathList[v]][pathList[v+1]]
     return value
 
 
-def beeColonyOptimization(n,A):
+def beeColonyOptimization():
     noPatches = round(math.sqrt(n))
     noBeesOptimal = noPatches
     noBeesSubOptimal = round(noBeesOptimal/5)
-
+    patches = {}
+    for i in range(noPatches):
+        patch = [*range(n)]
+        random.shuffle(patch)
+        fitnessPatch = evaluateFitness(n, A)
 
 
 
 def main():
     global n
+    global A
     if len(sys.argv) != 2:
         n, A = readDat("att48.dat")
     else:
