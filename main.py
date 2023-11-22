@@ -438,6 +438,12 @@ class individual:
 def rand_num(start, end):
     return random.randint(start, end -1 )
 
+def choose_parent(population_size):
+    weights =[30, 20, 15, 10, 7, 5, 5, 5, 3]
+    for i in range(population_size - 9):
+        weights.append(1)
+    return random.choices(range(population_size), weights=weights, k=1)
+
 
 # Function to return a mutated gnome by swapping two random cities in the gnome
 def mutatedGene(gnome):
@@ -467,11 +473,37 @@ def cooldown(temp):
     return (90 * temp) / 100
 
 
+def crossover(parent1, parent2):
+    crossover_point = rand_num(0, n)
+    # Initialize child with the first part from parent1
+    child_gnome = parent1.gnome[:crossover_point]
+    # Keeping track of cities in the child's route
+    child_city_set = set(child_gnome)
+    # Fill in the remaining part from parent2
+    for city in parent2.gnome:
+        if city not in child_city_set:
+            child_gnome.append(city)
+            child_city_set.add(city)
+
+    child = individual()
+    child.gnome = child_gnome
+    child.fitness = evaluateFitness(child_gnome)
+    return child
+
+
 def Genetic_Alg(A):
     population_size = 10
     population = []
+    value, path = nearestNeighbour(n, A)
+
+    for i in range(1):
+        start = individual()
+        start.gnome = path
+        start.fitness = evaluateFitness(start.gnome)
+        population.append(start)
+
     # Populating the gnome pool
-    for i in range(population_size):
+    for i in range(population_size - 1):
         new = individual()
         new.gnome = create_gnome()
         new.fitness = evaluateFitness(new.gnome)
@@ -486,12 +518,29 @@ def Genetic_Alg(A):
     found = False
     temperature = 1000
     gen = 1
-    gen_thres = 2*n
+    gen_thres = n
 
     while temperature > 100 and gen <= gen_thres:
         population.sort()
         print("\nCurrent temp: ", temperature)
         new_population = []
+        # Perform crossover between the best two parents (by population.sorted)
+        for i in range(population_size):
+            j = choose_parent(population_size)[0]
+            parent1 = population[j]
+            k = choose_parent(population_size)[0]
+            parent2 = population[k]
+            child = crossover(parent1, parent2)
+            new_population.append(child)
+            # print(child)
+
+        sum_fitness = 0
+        population = new_population
+
+        for i in range(population_size):
+            sum_fitness += population[i].fitness
+        mean_fitness = sum_fitness/population_size
+
         for i in range(population_size):
             p1 = population[i]
 
@@ -501,7 +550,7 @@ def Genetic_Alg(A):
                 new_gnome.gnome = new_g
                 new_gnome.fitness = evaluateFitness(new_gnome.gnome)
 
-                if new_gnome.fitness <= population[i].fitness:
+                if new_gnome.fitness <= mean_fitness:
                     new_population.append(new_gnome)
                     break
 
@@ -511,16 +560,15 @@ def Genetic_Alg(A):
                         2.7,
                         -1
                         * (
-                                (float)(new_gnome.fitness - population[i].fitness)
-                                / temperature
+                                (float)(new_gnome.fitness - mean_fitness) * 50
+                                / (temperature * mean_fitness)
                         ),
                     )
-                    if prob > 0.5:
+                    if prob > random.random():
                         new_population.append(new_gnome)
                         break
-
+        print(mean_fitness)
         temperature = cooldown(temperature)
-        population = new_population
         print("Generation", gen)
         print("GNOME     FITNESS VALUE")
 
@@ -530,7 +578,7 @@ def Genetic_Alg(A):
 
     value = 100000
     for i in range(population_size):
-        print(population[i].gnome, population[i].fitness)
+        # print(population[i].gnome, population[i].fitness)
         if population[i].fitness < value:
             value = population[i].fitness
             optimalpath = population[i].gnome
