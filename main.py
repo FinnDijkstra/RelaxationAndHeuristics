@@ -466,9 +466,11 @@ def localSearch(path, limit):
     return path, value
 
 
-def localSearchStep(path, bestValue):
+def tabuSearchStep(path, bestValue, tabuList):
     bestImprovement = 10000000
     bestPath = path
+    newLinks = []
+    bestValue = evaluateFitness(path)
     linkWorth = []
     for i in range(n-1):
         linkWorth.append(A[path[i]][path[i+1]])
@@ -485,27 +487,41 @@ def localSearchStep(path, bestValue):
             newiLink = A[path[jLinkedTo]][path[i]]
             improvement = newjLink + newiLink - iLinkWorth - jLinkWorth
             if improvement < bestImprovement:
-                bestPath = flipPath(path, i , j)
-                bestImprovement = improvement
+                if improvement < 0:
+                    bestPath = flipPath(path, i , j)
+                    bestImprovement = improvement
+                    newLinks = [{path[i], path[jLinkedTo]}, {path[j],path[iLinkedTo]}]
+                elif not ({path[i],path[iLinkedTo]} in tabuList
+                          or {path[j],path[jLinkedTo]} in tabuList):
+                    bestPath = flipPath(path, i, j)
+                    bestImprovement = improvement
+                    newLinks = [{path[i], path[jLinkedTo]}, {path[j], path[iLinkedTo]}]
     bestValue += bestImprovement
-    return bestPath, bestValue
+    return bestPath, bestValue, newLinks
 
 
-def tabuSearch(path):
-    stopNoImprovement = 6
-    tabuListSize = 8
+def tabuSearch(path,stopNoImprovement, tabuListSize):
+    bestPath = path
     tabuList = []
     value = evaluateFitness(path)
     lastImprovement = 0
     while lastImprovement < stopNoImprovement:
-        newPath, newValue = tabuSearchStep(path, value)
+        newPath, newValue, newLinks = tabuSearchStep(path, value, tabuList)
+        for link in newLinks:
+            if link in tabuList:
+                tabuList.remove(link)
+            tabuList.append(link)
+        while len(tabuList) > tabuListSize:
+            tabuList.pop(0)
         if newValue < value:
             value = newValue
             path = newPath
+            bestPath = newPath
             lastImprovement = 0
         else:
+            path = newPath
             lastImprovement += 1
-    return path, value
+    return bestPath, value
 
 
 
@@ -798,33 +814,40 @@ def main():
     if task3:
         st1 = time.time()
         x, p = nearestNeighbour(n,A)
+
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        print(f"Nearest Neighbour solved in {elapsed_time1} seconds, with value {x} and path {p}")
+
         st2 = time.time()
         value, path = Genetic_Alg(A)
         et2 = time.time()
         elapsed_time2 = et2 - st2
-        print(f"Solve in {elapsed_time2} seconds, with value {value} and path {path}")
-        for i in range(1):
-            # noPatches = round(n/2)  # round(math.sqrt(n))
-            # noBeesTotal = round(n**2 / 4)
-            # noOptimalPatches = round(math.sqrt(noPatches))
-            # noBeesOptimal = round(n/2)
-            # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
-            # initialPatchWidth = round(n / 4)
-            noPatches = 25 # round(math.sqrt(n))
-            noBeesTotal = 250
-            noOptimalPatches = 5
-            noBeesOptimal = 15
-            noBeesSubOptimal = 5
-            initialPatchWidth = 20
-            print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
-            for j in range(1):
-                st1 = time.time()
-                x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
-                et1 = time.time()
-                elapsed_time1 = et1 - st1
-                print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        print(f"Genetic Algorithm solved in {elapsed_time2} seconds, with value {value} and path {path}")
+
+        # noPatches = round(n/2)  # round(math.sqrt(n))
+        # noBeesTotal = round(n**2 / 4)
+        # noOptimalPatches = round(math.sqrt(noPatches))
+        # noBeesOptimal = round(n/2)
+        # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
+        # initialPatchWidth = round(n / 4)
+        noPatches = 25 # round(math.sqrt(n))
+        noBeesTotal = 250
+        noOptimalPatches = 5
+        noBeesOptimal = 15
+        noBeesSubOptimal = 5
+        initialPatchWidth = 20
+        st1 = time.time()
+        x, p = nearestNeighbour(n, A)
+        path, value = tabuSearch(p, initialPatchWidth, noPatches)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+        print(f"Tabu Search solved in {elapsed_time1} seconds, with value {value} and path {path}")
+        print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
+        st1 = time.time()
+        x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+        print(f"Artificial Bee Colony solved in {elapsed_time1} seconds, with value {x} and path {p}")
 
 main()
