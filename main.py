@@ -785,12 +785,16 @@ def Genetic_Alg(A):
         print("Generation", gen)
         print("GNOME     FITNESS VALUE")
 
+        population = new_population
         for i in range(population_size):
+            population.sort()
             print(population[i].gnome, population[i].fitness)
         gen += 1
 
+    population = new_population
     value = 100000
     for i in range(population_size):
+        population.sort()
         # print(population[i].gnome, population[i].fitness)
         if population[i].fitness < value:
             value = population[i].fitness
@@ -814,7 +818,6 @@ def main():
     if task3:
         st1 = time.time()
         x, p = nearestNeighbour(n,A)
-
         et1 = time.time()
         elapsed_time1 = et1 - st1
         print(f"Nearest Neighbour solved in {elapsed_time1} seconds, with value {x} and path {p}")
