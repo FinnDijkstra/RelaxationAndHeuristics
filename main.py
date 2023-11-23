@@ -3,6 +3,7 @@ from gurobipy import GRB
 import sys
 import time
 import random
+from statistics import mean
 import math
 
 
@@ -404,23 +405,167 @@ def evaluateFitness(pathList):
     return value
 
 
-def beeColonyOptimization():
-    noPatches = round(math.sqrt(n))
-    noBeesOptimal = noPatches
-    noBeesSubOptimal = round(noBeesOptimal/5)
-    patches = {}
+def swapNodes(pathList, index1, index2):
+    buffer = pathList[index1]
+    pathList[index1] = pathList[index2]
+    pathList[index2] = buffer
+    return pathList
+
+
+def flipPath(pathList, index1, index2):
+    if index1 <index2:
+        start = index1
+        end = index2
+    else:
+        start =index2
+        end = index1
+    if start == 0 and end == len(pathList)-1:
+        return pathList[::-1]
+    elif start == 0:
+        return pathList[end::-1] + pathList[end+1:]
+    elif end == len(pathList)-1:
+        return pathList[:start] + pathList[:start - 1:-1]
+    else:
+        return pathList[:start] + pathList[end:start-1:-1] + pathList[end+1:]
+
+
+def localSearchStep(path, bestValue):
+
+    bestImprovement = 0
+    bestPath = path
+    linkWorth = []
+    for i in range(n-1):
+        linkWorth.append(A[path[i]][path[i+1]])
+    linkWorth.append(A[path[n-1]][path[0]])
+    for i in range(1, n-1):
+        iLinkedTo = i-1
+        iLinkWorth = linkWorth[iLinkedTo]
+        for j in range(i+1,n):
+            jLinkedTo = j+1
+            if jLinkedTo == n:
+                jLinkedTo = 0
+            jLinkWorth = linkWorth[j]
+            newjLink = A[path[iLinkedTo]][path[j]]
+            newiLink = A[path[jLinkedTo]][path[i]]
+            improvement = newjLink + newiLink - iLinkWorth - jLinkWorth
+            if improvement < bestImprovement:
+                bestPath = flipPath(path, i , j)
+                bestImprovement = improvement
+    bestValue += bestImprovement
+    return bestPath, bestValue
+
+
+def localSearch(path, limit):
+    value = evaluateFitness(path)
+    for k in range(15):
+        newPath, newValue = localSearchStep(path, value)
+        if newValue < value:
+            value = newValue
+            path = newPath
+        else:
+            break
+    return path, value
+
+
+def beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal):
+    swapMethod = "shuffle"
+    patches = []
+    patchFitnesses = []
     for i in range(noPatches):
         patch = [*range(n)]
         random.shuffle(patch)
-        fitnessPatch = evaluateFitness(n, A)
+        patches.append(patch)
+        fitnessPatch = evaluateFitness(patch)
+        patchFitnesses.append(fitnessPatch)
 
+    lastImprovement = 0
+    iterations = 0
+    optimalPatches = sorted(range(len(patchFitnesses)), key=lambda i1: patchFitnesses[i1])[:noOptimalPatches]
+    optimalValues = [patchFitnesses[goodPatch] for goodPatch in optimalPatches]
+    bestValue = optimalValues[0]
+    while lastImprovement < 4 and iterations < 100:
+        # narrowingModifier = math.floor(lastImprovement/5*2)
+        narrowingModifier = math.floor(math.sqrt(iterations/(100))*(initialPatchWidth))
+        randomizationRange = max(initialPatchWidth-narrowingModifier,1)
+        searchModifier = math.floor(math.sqrt(iterations/(100))*(initialPatchWidth*2))
+        searchRange = max(initialPatchWidth*2-searchModifier,1)
+        oldOptimalValues = optimalValues
+        optimalPatches = sorted(range(len(patchFitnesses)), key=lambda i1: patchFitnesses[i1])[:noOptimalPatches]
+        optimalValues = [patchFitnesses[goodPatch] for goodPatch in optimalPatches]
+        print(optimalValues)
+        print(searchRange)
+        print(randomizationRange)
+        # if optimalValues == oldOptimalValues:
+        #     improved = False
+        # else:
+        #     improved = True
 
+        if optimalValues[0] >= bestValue:
+            improved = False
+        else:
+            improved = True
+
+            bestValue = optimalValues[0]
+            print(bestValue)
+        noBeesLeft = noBeesTotal
+        bestBeeLocations = [patches[optimalPatches[0]]]
+        bestBeeValues = [bestValue]
+        for i in range(noPatches):
+            if i in optimalPatches:
+                noBees = noBeesOptimal
+
+            else:
+                noBees = noBeesSubOptimal
+            noBeesLeft -= noBees
+            beeLocations = []
+            beeFitness = []
+            for k in range(noBees):
+                beeLocation = patches[i]
+                if swapMethod == "shuffle":
+                    index1 = random.randint(0,n-randomizationRange)
+                    index2 = index1 + randomizationRange
+                    modifiedPath = beeLocation[index1:index2]
+                    random.shuffle(modifiedPath)
+                    beeLocation = beeLocation[:index1]+modifiedPath + beeLocation[index2:]
+                if swapMethod == "swap":
+                    for l in range(randomizationRange):
+                        index1 = random.randint(0,n-1)
+                        index2 = random.randint(0,n-2)
+                        if index2 >= index1:
+                            index2 += 1
+                        beeLocation = swapNodes(beeLocation, index1, index2)
+                beeFindings, beeFit = localSearch(beeLocation, searchRange)
+                beeLocations.append(beeLocation)
+                beeFitness.append(beeFit)
+            bestBee = beeFitness.index(min(beeFitness))
+            bestBeeLocations.append(beeLocations[bestBee])
+            bestBeeValues.append(beeFitness[bestBee])
+            # if beeFitness[bestBee] < patchFitnesses[i]:
+            #     patchFitnesses[i] = beeFitness[bestBee]
+            #     patches[i] = beeLocations[bestBee]
+        for bee in range(noBeesLeft):
+            beeLocation = [*range(n)]
+            random.shuffle(beeLocation)
+            beeFindings, beeFit = localSearch(beeLocation, searchRange)
+            bestBeeLocations.append(beeFindings)
+            bestBeeValues.append(beeFit)
+        patchesIndex = sorted(range(len(bestBeeValues)), key=lambda i1: bestBeeValues[i1])[:noPatches]
+        patchFitnesses = [bestBeeValues[patch] for patch in patchesIndex]
+        patches = [bestBeeLocations[patch] for patch in patchesIndex]
+        if improved:
+            lastImprovement = 0
+        else:
+            lastImprovement += 1
+        iterations += 1
+    # print(iterations)
+    # print(2*n**2)
+    return min(patchFitnesses), patches[patchFitnesses.index(min(patchFitnesses))]
 
 def main():
     global n
     global A
     if len(sys.argv) != 2:
-        n, A = readDat("att48.dat")
+        n, A = readDat("gil262.dat")
     else:
         n, A = readDat(sys.argv[1])
     if task2:
@@ -432,9 +577,29 @@ def main():
         # CuttingPlanes(m)
     if task3:
         st1 = time.time()
-        x, p = nearestNeighbour(n, A)
+        x, p = nearestNeighbour(n,A)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-
         print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        for i in range(1):
+            # noPatches = round(n/2)  # round(math.sqrt(n))
+            # noBeesTotal = round(n**2 / 4)
+            # noOptimalPatches = round(math.sqrt(noPatches))
+            # noBeesOptimal = round(n/2)
+            # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
+            # initialPatchWidth = round(n / 4)
+            noPatches = 25 # round(math.sqrt(n))
+            noBeesTotal = 250
+            noOptimalPatches = 5
+            noBeesOptimal = 15
+            noBeesSubOptimal = 5
+            initialPatchWidth = 20
+            print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
+            for j in range(1):
+                st1 = time.time()
+                x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
+                et1 = time.time()
+                elapsed_time1 = et1 - st1
+                print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+
 main()
