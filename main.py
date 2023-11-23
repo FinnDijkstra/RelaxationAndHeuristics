@@ -769,12 +769,16 @@ def Genetic_Alg(A):
         print("Generation", gen)
         print("GNOME     FITNESS VALUE")
 
+        population = new_population
         for i in range(population_size):
+            population.sort()
             print(population[i].gnome, population[i].fitness)
         gen += 1
 
+    population = new_population
     value = 100000
     for i in range(population_size):
+        population.sort()
         # print(population[i].gnome, population[i].fitness)
         if population[i].fitness < value:
             value = population[i].fitness
@@ -806,25 +810,25 @@ def main():
         et2 = time.time()
         elapsed_time2 = et2 - st2
         print(f"Solve in {elapsed_time2} seconds, with value {value} and path {path}")
-        for i in range(1):
-            # noPatches = round(n/2)  # round(math.sqrt(n))
-            # noBeesTotal = round(n**2 / 4)
-            # noOptimalPatches = round(math.sqrt(noPatches))
-            # noBeesOptimal = round(n/2)
-            # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
-            # initialPatchWidth = round(n / 4)
-            noPatches = 25 # round(math.sqrt(n))
-            noBeesTotal = 250
-            noOptimalPatches = 5
-            noBeesOptimal = 15
-            noBeesSubOptimal = 5
-            initialPatchWidth = 20
-            print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
-            for j in range(1):
-                st1 = time.time()
-                x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
-                et1 = time.time()
-                elapsed_time1 = et1 - st1
-                print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        # for i in range(1):
+        #     # noPatches = round(n/2)  # round(math.sqrt(n))
+        #     # noBeesTotal = round(n**2 / 4)
+        #     # noOptimalPatches = round(math.sqrt(noPatches))
+        #     # noBeesOptimal = round(n/2)
+        #     # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
+        #     # initialPatchWidth = round(n / 4)
+        #     noPatches = 25 # round(math.sqrt(n))
+        #     noBeesTotal = 250
+        #     noOptimalPatches = 5
+        #     noBeesOptimal = 15
+        #     noBeesSubOptimal = 5
+        #     initialPatchWidth = 20
+        #     print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
+        #     for j in range(1):
+        #         st1 = time.time()
+        #         x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
+        #         et1 = time.time()
+        #         elapsed_time1 = et1 - st1
+        #         print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
 
 main()
