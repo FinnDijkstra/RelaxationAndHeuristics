@@ -456,7 +456,7 @@ def localSearchStep(path, bestValue):
 
 def localSearch(path, limit):
     value = evaluateFitness(path)
-    for k in range(15):
+    for k in range(limit):
         newPath, newValue = localSearchStep(path, value)
         if newValue < value:
             value = newValue
@@ -533,7 +533,7 @@ def beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubO
                         if index2 >= index1:
                             index2 += 1
                         beeLocation = swapNodes(beeLocation, index1, index2)
-                beeFindings, beeFit = localSearch(beeLocation, searchRange)
+                beeFindings, beeFit = localSearch(beeLocation, randomizationRange+5)
                 beeLocations.append(beeLocation)
                 beeFitness.append(beeFit)
             bestBee = beeFitness.index(min(beeFitness))
@@ -614,7 +614,7 @@ def create_gnome():
     return gnome
 
 def cooldown(temp):
-    return (90 * temp) / 100
+    return (95 * temp) / 100
 
 
 def crossover(parent1, parent2):
@@ -636,7 +636,7 @@ def crossover(parent1, parent2):
 
 
 def Genetic_Alg(A):
-    population_size = 10
+    population_size = 1000
     population = []
     value, path = nearestNeighbour(n, A)
 
@@ -662,7 +662,7 @@ def Genetic_Alg(A):
     found = False
     temperature = 1000
     gen = 1
-    gen_thres = n
+    gen_thres = n**2
 
     while temperature > 100 and gen <= gen_thres:
         population.sort()
@@ -689,9 +689,19 @@ def Genetic_Alg(A):
             p1 = population[i]
 
             while True:
-                new_g = mutatedGene(p1.gnome)
+                randomizationRange = round(math.sqrt(n))
+                index1 = random.randint(0, n - randomizationRange)
+                index2 = index1 + randomizationRange
+                originalGnome = p1.gnome.copy()
+                modifiedPath = originalGnome[index1:index2]
+                random.shuffle(modifiedPath)
+                originalGnome = originalGnome[:index1] + originalGnome + originalGnome[index2:]
                 new_gnome = individual()
-                new_gnome.gnome = new_g
+                new_gnome.gnome = originalGnome
+                # new_g = mutatedGene(p1.gnome)
+                # new_gnome = individual()
+                # new_gnome.gnome = new_g
+
                 new_gnome.fitness = evaluateFitness(new_gnome.gnome)
 
                 if new_gnome.fitness <= mean_fitness:
@@ -704,7 +714,7 @@ def Genetic_Alg(A):
                         2.7,
                         -1
                         * (
-                                (float)(new_gnome.fitness - mean_fitness) * 50
+                                (float)(new_gnome.fitness - mean_fitness) * 10
                                 / (temperature * mean_fitness)
                         ),
                     )
@@ -753,25 +763,25 @@ def main():
         et2 = time.time()
         elapsed_time2 = et2 - st2
         print(f"Solve in {elapsed_time2} seconds, with value {value} and path {path}")
-        # for i in range(1):
-        #     # noPatches = round(n/2)  # round(math.sqrt(n))
-        #     # noBeesTotal = round(n**2 / 4)
-        #     # noOptimalPatches = round(math.sqrt(noPatches))
-        #     # noBeesOptimal = round(n/2)
-        #     # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
-        #     # initialPatchWidth = round(n / 4)
-        #     noPatches = 25 # round(math.sqrt(n))
-        #     noBeesTotal = 250
-        #     noOptimalPatches = 5
-        #     noBeesOptimal = 15
-        #     noBeesSubOptimal = 5
-        #     initialPatchWidth = 20
-        #     print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
-        #     for j in range(1):
-        #         st1 = time.time()
-        #         x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
-        #         et1 = time.time()
-        #         elapsed_time1 = et1 - st1
-        #         print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
+        for i in range(1):
+            # noPatches = round(n/2)  # round(math.sqrt(n))
+            # noBeesTotal = round(n**2 / 4)
+            # noOptimalPatches = round(math.sqrt(noPatches))
+            # noBeesOptimal = round(n/2)
+            # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
+            # initialPatchWidth = round(n / 4)
+            noPatches = 25 # round(math.sqrt(n))
+            noBeesTotal = 250
+            noOptimalPatches = 5
+            noBeesOptimal = 15
+            noBeesSubOptimal = 5
+            initialPatchWidth = 20
+            print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
+            for j in range(1):
+                st1 = time.time()
+                x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
+                et1 = time.time()
+                elapsed_time1 = et1 - st1
+                print(f"Solve in {elapsed_time1} seconds, with value {x} and path {p}")
 
 main()
