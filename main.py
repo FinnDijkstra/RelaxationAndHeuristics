@@ -466,6 +466,49 @@ def localSearch(path, limit):
     return path, value
 
 
+def localSearchStep(path, bestValue):
+    bestImprovement = 10000000
+    bestPath = path
+    linkWorth = []
+    for i in range(n-1):
+        linkWorth.append(A[path[i]][path[i+1]])
+    linkWorth.append(A[path[n-1]][path[0]])
+    for i in range(1, n-1):
+        iLinkedTo = i-1
+        iLinkWorth = linkWorth[iLinkedTo]
+        for j in range(i+1,n):
+            jLinkedTo = j+1
+            if jLinkedTo == n:
+                jLinkedTo = 0
+            jLinkWorth = linkWorth[j]
+            newjLink = A[path[iLinkedTo]][path[j]]
+            newiLink = A[path[jLinkedTo]][path[i]]
+            improvement = newjLink + newiLink - iLinkWorth - jLinkWorth
+            if improvement < bestImprovement:
+                bestPath = flipPath(path, i , j)
+                bestImprovement = improvement
+    bestValue += bestImprovement
+    return bestPath, bestValue
+
+
+def tabuSearch(path):
+    stopNoImprovement = 6
+    tabuListSize = 8
+    tabuList = []
+    value = evaluateFitness(path)
+    lastImprovement = 0
+    while lastImprovement < stopNoImprovement:
+        newPath, newValue = tabuSearchStep(path, value)
+        if newValue < value:
+            value = newValue
+            path = newPath
+            lastImprovement = 0
+        else:
+            lastImprovement += 1
+    return path, value
+
+
+
 def beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal):
     swapMethod = "shuffle"
     patches = []
@@ -660,11 +703,11 @@ def Genetic_Alg(A):
     print()
 
     found = False
-    temperature = 1000
+    temperature = 500
     gen = 1
     gen_thres = n**2
 
-    while temperature > 100 and gen <= gen_thres:
+    while temperature > 10 and gen <= gen_thres:
         population.sort()
         print("\nCurrent temp: ", temperature)
         new_population = []
