@@ -270,7 +270,7 @@ def findPath(flowCapacityDict, path, sink, depthDict, depth):
         path.append(sink)
         return True, path, flowCapacityDict[start][sink]
     for end in flowCapacityDict[path[-1]]:
-        if end not in path:  # and depth == depthDict[end]:
+        if end not in path:  # and depth == depthDict[end] i:
             path.append(end)
             pathBool, path, maxpathflow = findPath(flowCapacityDict, path, sink, depthDict, depth + 1)
             if pathBool:
