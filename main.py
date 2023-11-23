@@ -550,9 +550,9 @@ def beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubO
         oldOptimalValues = optimalValues
         optimalPatches = sorted(range(len(patchFitnesses)), key=lambda i1: patchFitnesses[i1])[:noOptimalPatches]
         optimalValues = [patchFitnesses[goodPatch] for goodPatch in optimalPatches]
-        print(optimalValues)
-        print(searchRange)
-        print(randomizationRange)
+        # print(optimalValues)
+        # print(searchRange)
+        # print(randomizationRange)
         # if optimalValues == oldOptimalValues:
         #     improved = False
         # else:
@@ -564,7 +564,7 @@ def beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubO
             improved = True
 
             bestValue = optimalValues[0]
-            print(bestValue)
+            # print(bestValue)
         noBeesLeft = noBeesTotal
         bestBeeLocations = [patches[optimalPatches[0]]]
         bestBeeValues = [bestValue]
@@ -713,10 +713,10 @@ def Genetic_Alg(A):
         population.append(new)
 
 
-    print("\nInitial population: \nGNOME     FITNESS VALUE\n")
-    for i in range(population_size):
-        print(population[i].gnome, population[i].fitness)
-    print()
+    # print("\nInitial population: \nGNOME     FITNESS VALUE\n")
+    # for i in range(population_size):
+    #     print(population[i].gnome, population[i].fitness)
+    # print()
 
     found = False
     temperature = 500
@@ -725,7 +725,7 @@ def Genetic_Alg(A):
 
     while temperature > 10 and gen <= gen_thres:
         population.sort()
-        print("\nCurrent temp: ", temperature)
+        # print("\nCurrent temp: ", temperature)
         new_population = []
         # Perform crossover between the best two parents (by population.sorted)
         for i in range(population_size):
@@ -780,15 +780,15 @@ def Genetic_Alg(A):
                     if prob > random.random():
                         new_population.append(new_gnome)
                         break
-        print(mean_fitness)
+        # print(mean_fitness)
         temperature = cooldown(temperature)
-        print("Generation", gen)
-        print("GNOME     FITNESS VALUE")
+        # print("Generation", gen)
+        # print("GNOME     FITNESS VALUE")
 
         population = new_population
         for i in range(population_size):
             population.sort()
-            print(population[i].gnome, population[i].fitness)
+            # print(population[i].gnome, population[i].fitness)
         gen += 1
 
     population = new_population
@@ -841,12 +841,19 @@ def main():
         noBeesSubOptimal = 5
         initialPatchWidth = 20
         st1 = time.time()
+        p = [*range(n)]
+        random.shuffle(p)
+        path, value = tabuSearch(p, initialPatchWidth, noPatches)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+        print(f"Tabu Search (Random start) solved in {elapsed_time1} seconds, with value {value} and path {path}")
+        st1 = time.time()
         x, p = nearestNeighbour(n, A)
         path, value = tabuSearch(p, initialPatchWidth, noPatches)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Tabu Search solved in {elapsed_time1} seconds, with value {value} and path {path}")
-        print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
+        print(f"Tabu Search (Nearest Neigbour start) solved in {elapsed_time1} seconds, with value {value} and path {path}")
+        # print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
         st1 = time.time()
         x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
         et1 = time.time()
