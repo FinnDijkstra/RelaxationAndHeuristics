@@ -828,18 +828,18 @@ def main():
         elapsed_time2 = et2 - st2
         print(f"- Genetic Algorithm: {value}, {elapsed_time2} seconds")
 
-        # noPatches = round(n/2)  # round(math.sqrt(n))
-        # noBeesTotal = round(n**2 / 4)
-        # noOptimalPatches = round(math.sqrt(noPatches))
-        # noBeesOptimal = round(n/2)
-        # noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
-        # initialPatchWidth = round(n / 4)
-        noPatches = 25 # round(math.sqrt(n))
-        noBeesTotal = 250
-        noOptimalPatches = 5
-        noBeesOptimal = 15
-        noBeesSubOptimal = 5
-        initialPatchWidth = 20
+        noPatches = round(n/2)  # round(math.sqrt(n))
+        noBeesTotal = round(n**1.5)
+        noOptimalPatches = round(math.sqrt(noPatches))
+        noBeesOptimal = round(n/3)
+        noBeesSubOptimal = round(math.sqrt(noBeesOptimal))
+        initialPatchWidth = round(n / 2)
+        # noPatches = 25 # round(math.sqrt(n))
+        # noBeesTotal = 250
+        # noOptimalPatches = 5
+        # noBeesOptimal = 15
+        # noBeesSubOptimal = 5
+        # initialPatchWidth = 20
         st1 = time.time()
         p = [*range(n)]
         random.shuffle(p)
