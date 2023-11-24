@@ -820,13 +820,13 @@ def main():
         x, p = nearestNeighbour(n,A)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Nearest Neighbour solved in {elapsed_time1} seconds, with value {x} and path {p}")
+        print(f"- Nearest Neighbour: {x}, {elapsed_time1} seconds")
 
         st2 = time.time()
         value, path = Genetic_Alg(A)
         et2 = time.time()
         elapsed_time2 = et2 - st2
-        print(f"Genetic Algorithm solved in {elapsed_time2} seconds, with value {value} and path {path}")
+        print(f"- Genetic Algorithm: {value}, {elapsed_time2} seconds")
 
         # noPatches = round(n/2)  # round(math.sqrt(n))
         # noBeesTotal = round(n**2 / 4)
@@ -846,18 +846,18 @@ def main():
         path, value = tabuSearch(p, initialPatchWidth, noPatches)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Tabu Search (Random start) solved in {elapsed_time1} seconds, with value {value} and path {path}")
+        print(f"- Tabu Search (Random start): {value}, {elapsed_time1} seconds")
         st1 = time.time()
         x, p = nearestNeighbour(n, A)
         path, value = tabuSearch(p, initialPatchWidth, noPatches)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Tabu Search (Nearest Neigbour start) solved in {elapsed_time1} seconds, with value {value} and path {path}")
+        print(f"- Tabu Search (Nearest Neigbour start): {value} , {elapsed_time1} seconds")
         # print(f"{noPatches}x{noOptimalPatches}x{noBeesOptimal}x{noBeesSubOptimal}x{initialPatchWidth}")
         st1 = time.time()
         x, p = beeColonyOptimization(noPatches, noOptimalPatches, noBeesOptimal, noBeesSubOptimal, initialPatchWidth, noBeesTotal)
         et1 = time.time()
         elapsed_time1 = et1 - st1
-        print(f"Artificial Bee Colony solved in {elapsed_time1} seconds, with value {x} and path {p}")
+        print(f"- Artificial Bee Colony:{x}, {elapsed_time1} seconds")
 
 main()
