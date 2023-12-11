@@ -50,7 +50,8 @@ n = 0
 A =[[]]
 nodesInCut = []
 task2 = False
-task3 = True
+task3 = False
+task4 = True
 
 
 def readDat(filename):
@@ -801,6 +802,9 @@ def Genetic_Alg(A):
             optimalpath = population[i].gnome
     return value, optimalpath
 
+def branchAndBound(n,A):
+    return 0, []
+
 def main():
     global n
     global A
@@ -859,5 +863,11 @@ def main():
         et1 = time.time()
         elapsed_time1 = et1 - st1
         print(f"- Artificial Bee Colony:{x}, {elapsed_time1} seconds")
+    if task4:
+        st1 = time.time()
+        x, p = branchAndBound(n, A)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+        print(f"- Branch and Bound: {x}, {elapsed_time1} seconds")
 
 main()
