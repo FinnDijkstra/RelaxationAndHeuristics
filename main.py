@@ -802,7 +802,206 @@ def Genetic_Alg(A):
             optimalpath = population[i].gnome
     return value, optimalpath
 
+
+def createStart(start,startPath, possibleVertices, demanded,twoDemList):
+    if start in twoDemList:
+        for endVertex in possibleVertices:
+            if {endVertex, start} in demanded:
+                startPath.insert(0,endVertex)
+                possibleVertices.remove(endVertex)
+                return createStart(endVertex,startPath, possibleVertices, demanded,twoDemList)
+    else:
+        return startPath
+
+
+
+def seekPath(startPath, forbidden,demanded,twoDemList):
+    if len(startPath) == n:
+        if {startPath[0],startPath[-1]} in forbidden:
+            return False, startPath
+        else:
+            return True, startPath
+    startVertex = startPath[-1]
+    possibleVertices = [*range(n)]
+    for vertex in startPath:
+        possibleVertices.remove(vertex)
+    for endVertex in possibleVertices:
+        if {endVertex,startVertex} in demanded:
+            path = startPath.copy()
+            path.append(endVertex)
+            return seekPath(path,forbidden,demanded,twoDemList)
+    for endVertex in possibleVertices:
+        if endVertex not in twoDemList and {endVertex,startVertex} not in forbidden:
+            path = startPath.copy()
+            path.append(endVertex)
+            feasible, path = seekPath(path,forbidden,demanded,twoDemList)
+            if feasible:
+                return feasible, path
+    return False, startPath
+
+
+
+def makeValidPath(forbidden, demanded):
+    demandCount = {}
+    for vertex in range(n):
+        demandCount[vertex] = 0
+    for edge in demanded:
+        for vertex in edge:
+            demandCount[vertex] += 1
+    twoDemList = []
+    for vertex, count in demandCount.items():
+        if count == 2:
+            twoDemList.append(vertex)
+    possibleVertices = [*range(1,n)]
+    startPath = createStart(0,[0],possibleVertices, demanded,twoDemList)
+    return seekPath(startPath, forbidden,demanded,twoDemList)
+
+
+def modifiedTabuSearchStep(path, bestValue, tabuList, forbidden, demanded):
+    bestImprovement = 10000000
+    bestPath = path
+    newLinks = []
+    bestValue = evaluateFitness(path)
+    linkWorth = []
+    for i in range(n-1):
+        linkWorth.append(A[path[i]][path[i+1]])
+    linkWorth.append(A[path[n-1]][path[0]])
+    for i in range(1, n-1):
+        iLinkedTo = i-1
+        iLinkWorth = linkWorth[iLinkedTo]
+        for j in range(i+1,n):
+            jLinkedTo = j+1
+            if jLinkedTo == n:
+                jLinkedTo = 0
+            if not ({path[i],path[iLinkedTo]} in demanded
+                          or {path[j],path[jLinkedTo]} in demanded):
+                if not ({path[i],path[jLinkedTo]} in forbidden
+                          or {path[j],path[iLinkedTo]} in forbidden):
+                    jLinkWorth = linkWorth[j]
+                    newjLink = A[path[iLinkedTo]][path[j]]
+                    newiLink = A[path[jLinkedTo]][path[i]]
+                    improvement = newjLink + newiLink - iLinkWorth - jLinkWorth
+                    if improvement < bestImprovement:
+                        if improvement < 0:
+                            bestPath = flipPath(path, i, j)
+                            bestImprovement = improvement
+                            newLinks = [{path[i], path[jLinkedTo]}, {path[j],path[iLinkedTo]}]
+                        elif not ({path[i],path[iLinkedTo]} in tabuList
+                                  or {path[j],path[jLinkedTo]} in tabuList):
+                            bestPath = flipPath(path, i, j)
+                            bestImprovement = improvement
+                            newLinks = [{path[i], path[jLinkedTo]}, {path[j], path[iLinkedTo]}]
+    bestValue += bestImprovement
+    return bestPath, bestValue, newLinks
+
+
+def modifiedTabuSearch(path,stopNoImprovement, tabuListSize, forbidden, demanded):
+    bestPath = path
+    tabuList = []
+    value = evaluateFitness(path)
+    lastImprovement = 0
+    while lastImprovement < stopNoImprovement:
+        newPath, newValue, newLinks = modifiedTabuSearchStep(path, value, tabuList, forbidden, demanded)
+        for link in newLinks:
+            if link in tabuList:
+                tabuList.remove(link)
+            tabuList.append(link)
+        while len(tabuList) > tabuListSize:
+            tabuList.pop(0)
+        if newValue < value:
+            value = newValue
+            path = newPath
+            bestPath = newPath
+            lastImprovement = 0
+        else:
+            path = newPath
+            lastImprovement += 1
+    return bestPath, value
+
+
+class Node:
+    def __init__(self,m, forbidden=[], demanded=[]) -> None:
+        self.model = m
+        self.active = True
+        self.forbidden = forbidden
+        self.demanded = demanded
+        self.lb = float("-inf")
+        self.ub = float("inf")
+        self.path = []
+
+    def bound(self):
+        feasible, validPath = makeValidPath(self.forbidden, self.demanded)
+        if feasible:
+            self.path, self.ub = modifiedTabuSearch(validPath,n/2, n/2, self.forbidden, self.demanded)
+            # self.model.addConstr((edges[xBranch, yBranch] == 0), name="forbidEdge")
+            # self.model.addConstr((edges[xBranch, yBranch] == 1), name="demandEdge")
+            self.model = CuttingPlanes(self.model)
+            self.lb = self.model.ObjVal
+        else:
+            self.active = False
+
+
+    def branch(self):
+        self.active = False
+        solution = self.model.getAttr("X", edges)
+        minDistance = 1
+        branchOn = [0,1]
+        for i, j in solution:
+            distance = abs(solution[i, j]- 0.5)
+            if distance < minDistance:
+                minDistance = distance
+                branchOn = {i,j}
+                xBranch = i
+                yBranch = j
+        newForbidden = self.forbidden.copy()
+        newForbidden.append(branchOn)
+        mForbid = self.model
+        newDemanded = self.demanded.copy()
+        newDemanded.append(branchOn)
+        mDemand = self.model
+
+        return Node(mForbid, newForbidden, self.demanded.copy()), Node(mDemand, self.forbidden.copy(), newDemanded)
+
+
+    def __str__(self):
+        return f"Node with LB {self.lb}, UB {self.ub}, forbidden list {self.forbidden}"
+    def __lt__(self, other):
+        return self.ub < other.ub
+
+    def __gt__(self, other):
+        return self.lb > other.ub
+
+
+
 def branchAndBound(n,A):
+    m = Model(n,A)
+    globalUB = Node(m.copy())
+    globalLB = Node(m.copy())
+    baseNode = Node(m)
+    baseNode.bound()
+    nodeList = [baseNode]
+    # Vanaf hier is code wat je elke stap doet
+    foundBest = False
+    while not foundBest:
+        firstActive = True
+        for node in nodeList:
+            globalUB = min(globalUB, node)
+            if node.active:
+                if firstActive or globalLB.lb > node.lb:
+                    globalLB = node
+        if globalLB.lb == globalUB.ub:
+            foundBest = True
+        else:
+            forbidNode, demandNode = globalLB.branch()
+            forbidNode.bound()
+            demandNode.bound()
+            nodeList.append(forbidNode)
+            nodeList.append(demandNode)
+
+
+
+
+
     return 0, []
 
 def main():
@@ -864,10 +1063,12 @@ def main():
         elapsed_time1 = et1 - st1
         print(f"- Artificial Bee Colony:{x}, {elapsed_time1} seconds")
     if task4:
-        st1 = time.time()
-        x, p = branchAndBound(n, A)
-        et1 = time.time()
-        elapsed_time1 = et1 - st1
-        print(f"- Branch and Bound: {x}, {elapsed_time1} seconds")
+        branchAndBound(n,A)
+
+        # st1 = time.time()
+        # x, p = branchAndBound(n, A)
+        # et1 = time.time()
+        # elapsed_time1 = et1 - st1
+        # print(f"- Branch and Bound: {x}, {elapsed_time1} seconds")
 
 main()
