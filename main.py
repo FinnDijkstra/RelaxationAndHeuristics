@@ -922,6 +922,7 @@ def modifiedTabuSearch(path,stopNoImprovement, tabuListSize, forbidden, demanded
 class Node:
     def __init__(self,m, forbidden=[], demanded=[]) -> None:
         self.model = m
+        self.solution = gp.tupledict()
         self.active = True
         self.forbidden = forbidden
         self.demanded = demanded
@@ -933,19 +934,43 @@ class Node:
         feasible, validPath = makeValidPath(self.forbidden, self.demanded)
         if feasible:
             self.path, self.ub = modifiedTabuSearch(validPath,n/2, n/2, self.forbidden, self.demanded)
-            # self.model.addConstr((edges[xBranch, yBranch] == 0), name="forbidEdge")
-            # self.model.addConstr((edges[xBranch, yBranch] == 1), name="demandEdge")
+            forbiddenLists = [list(edge) for edge in self.forbidden]
+            demandedLists = [list(edge) for edge in self.demanded]
+            forbiddenConstraints = self.model.addConstrs((edges[forbiddenLists[edgeNo][0], forbiddenLists[edgeNo][1]]
+                                                          == 0 for edgeNo in range(len(forbiddenLists))), name="forbidEdge")
+            demandedConstraints = self.model.addConstrs((edges[demandedLists[edgeNo][0], demandedLists[edgeNo][1]]
+                                                          == 1 for edgeNo in range(len(demandedLists))), name="demandEdge")
             self.model = CuttingPlanes(self.model)
             self.lb = self.model.ObjVal
+            self.solution = self.model.getAttr("X", edges)
+            self.model.remove(forbiddenConstraints)
+            self.model.remove(demandedConstraints)
+            allBinary = True
+            for i, j in self.solution:
+                if self.solution[i,j] >0 and self.solution[i,j]<1:
+                    allBinary = False
+            if allBinary:
+                self.ub = self.lb
+                self.makePathFromSolution()
+                self.active = False
         else:
             self.active = False
+
+    def makePathFromSolution(self):
+        path = [0]
+        while len(path) < n:
+            vertex = path[-1]
+            for endvertex in range(n):
+                if endvertex not in path:
+                    if self.solution[vertex,endvertex]>0:
+                        path.append(endvertex)
 
 
     def branch(self):
         self.active = False
-        solution = self.model.getAttr("X", edges)
+        solution = self.solution
         minDistance = 1
-        branchOn = [0,1]
+        branchOn = {0,1}
         for i, j in solution:
             distance = abs(solution[i, j]- 0.5)
             if distance < minDistance:
@@ -953,6 +978,9 @@ class Node:
                 branchOn = {i,j}
                 xBranch = i
                 yBranch = j
+        print(f"At {self}")
+        print(f"Branching on: {branchOn} (distance to 0.5: {minDistance})")
+
         newForbidden = self.forbidden.copy()
         newForbidden.append(branchOn)
         mForbid = self.model
@@ -964,7 +992,7 @@ class Node:
 
 
     def __str__(self):
-        return f"Node with LB {self.lb}, UB {self.ub}, forbidden list {self.forbidden}"
+        return f"Node with LB {self.lb}, UB {self.ub}, forbidden list {self.forbidden}, demanded list {self.demanded}"
     def __lt__(self, other):
         return self.ub < other.ub
 
@@ -982,33 +1010,36 @@ def branchAndBound(n,A):
     nodeList = [baseNode]
     # Vanaf hier is code wat je elke stap doet
     foundBest = False
-    while not foundBest:
-        firstActive = True
-        for node in nodeList:
-            globalUB = min(globalUB, node)
-            if node.active:
-                if firstActive or globalLB.lb > node.lb:
-                    globalLB = node
-        if globalLB.lb == globalUB.ub:
-            foundBest = True
-        else:
-            forbidNode, demandNode = globalLB.branch()
-            forbidNode.bound()
-            demandNode.bound()
-            nodeList.append(forbidNode)
-            nodeList.append(demandNode)
+    try:
+        while not foundBest:
+            firstActive = True
+            for node in nodeList:
+                globalUB = min(globalUB, node)
+                if node.active:
+                    if firstActive or globalLB.lb > node.lb:
+                        globalLB = node
+                        firstActive = False
+            if globalLB.lb + 0.000002 >= globalUB.ub:
+                foundBest = True
+            else:
+                forbidNode, demandNode = globalLB.branch()
+                forbidNode.bound()
+                demandNode.bound()
+                nodeList.append(forbidNode)
+                nodeList.append(demandNode)
+        return globalUB.ub, globalUB.path
+    except KeyboardInterrupt:
+        return globalUB.ub, globalUB.path
 
 
 
 
-
-    return 0, []
 
 def main():
     global n
     global A
     if len(sys.argv) != 2:
-        n, A = readDat("att48.dat")
+        n, A = readDat("gr48.dat")
     else:
         n, A = readDat(sys.argv[1])
     if task2:
@@ -1063,12 +1094,11 @@ def main():
         elapsed_time1 = et1 - st1
         print(f"- Artificial Bee Colony:{x}, {elapsed_time1} seconds")
     if task4:
-        branchAndBound(n,A)
 
-        # st1 = time.time()
-        # x, p = branchAndBound(n, A)
-        # et1 = time.time()
-        # elapsed_time1 = et1 - st1
-        # print(f"- Branch and Bound: {x}, {elapsed_time1} seconds")
+        st1 = time.time()
+        x, p = branchAndBound(n, A)
+        et1 = time.time()
+        elapsed_time1 = et1 - st1
+        print(f"- Branch and Bound: {x}, {elapsed_time1} seconds with path {p}")
 
 main()
