@@ -1004,10 +1004,11 @@ class Node:
 def branchAndBound(m):
 
 
-    globalLB = Node(m.copy())
+
     baseNode = Node(m)
     baseNode.bound()
     globalUB = baseNode
+    globalLB = baseNode
     nodeList = [baseNode]
     # Vanaf hier is code wat je elke stap doet
     foundBest = False
@@ -1048,7 +1049,7 @@ def main():
     global n
     global A
     if len(sys.argv) != 2:
-        n, A = readDat("gr48.dat")
+        n, A = readDat("gr17.dat")
     else:
         n, A = readDat(sys.argv[1])
     if task2:
