@@ -1012,10 +1012,12 @@ def branchAndBound(n,A):
     foundBest = False
     try:
         while not foundBest:
+            globalUB = min(nodeList)
             firstActive = True
             for node in nodeList:
-                globalUB = min(globalUB, node)
                 if node.active:
+                    if node.lb > globalUB.ub:
+                        node.active = False
                     if firstActive or globalLB.lb > node.lb:
                         globalLB = node
                         firstActive = False
@@ -1039,7 +1041,7 @@ def main():
     global n
     global A
     if len(sys.argv) != 2:
-        n, A = readDat("gr48.dat")
+        n, A = readDat("att48.dat")
     else:
         n, A = readDat(sys.argv[1])
     if task2:
