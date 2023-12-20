@@ -976,10 +976,10 @@ class Node:
             if distance < minDistance:
                 minDistance = distance
                 branchOn = {i,j}
-                xBranch = i
-                yBranch = j
-        print(f"At {self}")
-        print(f"Branching on: {branchOn} (distance to 0.5: {minDistance})")
+        #         xBranch = i
+        #         yBranch = j
+        # print(f"At {self}")
+        # print(f"Branching on: {branchOn} (distance to 0.5: {minDistance})")
 
         newForbidden = self.forbidden.copy()
         newForbidden.append(branchOn)
@@ -1001,32 +1001,39 @@ class Node:
 
 
 
-def branchAndBound(n,A):
-    m = Model(n,A)
-    globalUB = Node(m.copy())
+def branchAndBound(m):
+
+
     globalLB = Node(m.copy())
     baseNode = Node(m)
     baseNode.bound()
+    globalUB = baseNode
     nodeList = [baseNode]
     # Vanaf hier is code wat je elke stap doet
     foundBest = False
     try:
         while not foundBest:
-            globalUB = min(nodeList)
             firstActive = True
+
             for node in nodeList:
+
                 if node.active:
-                    if node.lb > globalUB.ub:
-                        node.active = False
-                    if firstActive or globalLB.lb > node.lb:
+                    if firstActive:
                         globalLB = node
                         firstActive = False
+                    elif globalUB.ub < node.lb:
+                        node.active = False
+                    elif globalLB.lb > node.lb:
+                        globalLB = node
+
             if globalLB.lb + 0.000002 >= globalUB.ub:
                 foundBest = True
             else:
                 forbidNode, demandNode = globalLB.branch()
                 forbidNode.bound()
+                globalUB = min(globalUB, forbidNode)
                 demandNode.bound()
+                globalUB = min(globalUB, demandNode)
                 nodeList.append(forbidNode)
                 nodeList.append(demandNode)
         return globalUB.ub, globalUB.path
@@ -1041,7 +1048,7 @@ def main():
     global n
     global A
     if len(sys.argv) != 2:
-        n, A = readDat("att48.dat")
+        n, A = readDat("gr48.dat")
     else:
         n, A = readDat(sys.argv[1])
     if task2:
@@ -1096,9 +1103,9 @@ def main():
         elapsed_time1 = et1 - st1
         print(f"- Artificial Bee Colony:{x}, {elapsed_time1} seconds")
     if task4:
-
+        m = Model(n, A)
         st1 = time.time()
-        x, p = branchAndBound(n, A)
+        x, p = branchAndBound(m)
         et1 = time.time()
         elapsed_time1 = et1 - st1
         print(f"- Branch and Bound: {x}, {elapsed_time1} seconds with path {p}")
